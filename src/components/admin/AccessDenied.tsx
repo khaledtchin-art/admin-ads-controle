@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { ShieldAlert } from "lucide-react";
 
-export function AccessDenied({ email, onSignOut }: { email?: string; onSignOut: () => void }) {
+export function AccessDenied({
+  email,
+  onSignOut,
+}: {
+  email?: string | undefined;
+  onSignOut: () => void;
+}) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-2xl border border-destructive/40 bg-card p-8 text-center shadow-[var(--shadow-panel)]">
