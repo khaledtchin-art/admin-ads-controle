@@ -55,7 +55,7 @@ function Panel({
   count,
 }: {
   title: string;
-  count?: number;
+  count?: number | undefined;
   children: React.ReactNode;
 }) {
   return (
