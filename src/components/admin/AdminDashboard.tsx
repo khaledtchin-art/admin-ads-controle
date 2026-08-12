@@ -31,6 +31,12 @@ import {
   useAdminTable,
   useAdminUpdate,
 } from "@/lib/admin-queries";
+import { WithdrawalsPanel } from "./WithdrawalsPanel";
+import { KycPanel } from "./KycPanel";
+import { SecurityPanel } from "./SecurityPanel";
+import { FinancePanel } from "./FinancePanel";
+import { RolesPanel } from "./RolesPanel";
+import { NotificationsPanel } from "./NotificationsPanel";
 
 type Row = Record<string, unknown>;
 
@@ -161,6 +167,10 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
             <TabsTrigger value="kyc"><BadgeCheck className="mr-2 size-4" />KYC</TabsTrigger>
             <TabsTrigger value="market"><Store className="mr-2 size-4" />Marketplace</TabsTrigger>
             <TabsTrigger value="referrals"><Share2 className="mr-2 size-4" />Parrainage</TabsTrigger>
+            <TabsTrigger value="finance"><Wallet className="mr-2 size-4" />Finance</TabsTrigger>
+            <TabsTrigger value="security"><ShieldCheck className="mr-2 size-4" />Sécurité</TabsTrigger>
+            <TabsTrigger value="roles"><Users className="mr-2 size-4" />Rôles</TabsTrigger>
+            <TabsTrigger value="notifications"><ScrollText className="mr-2 size-4" />Notifications</TabsTrigger>
             <TabsTrigger value="logs"><ScrollText className="mr-2 size-4" />Logs</TabsTrigger>
           </TabsList>
 
@@ -272,8 +282,8 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
             </Panel>
           </TabsContent>
 
-          {(["deposits", "withdrawals"] as const).map((table) => {
-            const q = table === "deposits" ? deposits : withdrawals;
+          {(["deposits"] as const).map((table) => {
+            const q = deposits;
             return (
               <TabsContent key={table} value={table} className="mt-4">
                 <Panel
@@ -327,72 +337,7 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
           })}
 
           <TabsContent value="kyc" className="mt-4">
-            <Panel title="Validation KYC" count={kyc.data?.length}>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Utilisateur</TableHead>
-                    <TableHead>Document</TableHead>
-                    <TableHead>Numéro</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Soumis le</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(kyc.data ?? []).length === 0 && <Empty cols={6} />}
-                  {(kyc.data ?? []).map((k) => (
-                    <TableRow key={String(k["id"])}>
-                      <TableCell className="font-mono text-xs">{shortId(k["user_id"])}</TableCell>
-                      <TableCell>{String(k["document_type"] ?? "—")}</TableCell>
-                      <TableCell className="text-muted-foreground">{String(k["document_number"] ?? "—")}</TableCell>
-                      <TableCell><StatusBadge status={k["status"]} /></TableCell>
-                      <TableCell className="text-muted-foreground">{shortDate(k["created_at"])}</TableCell>
-                      <TableCell className="space-x-2 text-right">
-                        <Button
-                          size="sm"
-                          disabled={String(k["status"]) !== "pending"}
-                          onClick={() =>
-                            update.mutate({
-                              table: "kyc_submissions",
-                              id: String(k["id"]),
-                              action: "kyc.approve",
-                              values: {
-                                status: "approved",
-                                reviewed_by: user.id,
-                                reviewed_at: new Date().toISOString(),
-                              },
-                            })
-                          }
-                        >
-                          Approuver
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={String(k["status"]) !== "pending"}
-                          onClick={() =>
-                            update.mutate({
-                              table: "kyc_submissions",
-                              id: String(k["id"]),
-                              action: "kyc.reject",
-                              values: {
-                                status: "rejected",
-                                rejection_reason: "Document non conforme",
-                                reviewed_by: user.id,
-                                reviewed_at: new Date().toISOString(),
-                              },
-                            })
-                          }
-                        >
-                          Rejeter
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Panel>
+            <KycPanel adminId={user.id} />
           </TabsContent>
 
           <TabsContent value="market" className="mt-4">
@@ -469,6 +414,26 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
                 </TableBody>
               </Table>
             </Panel>
+          </TabsContent>
+
+          <TabsContent value="withdrawals" className="mt-4">
+            <WithdrawalsPanel adminId={user.id} />
+          </TabsContent>
+
+          <TabsContent value="finance" className="mt-4">
+            <FinancePanel />
+          </TabsContent>
+
+          <TabsContent value="security" className="mt-4">
+            <SecurityPanel adminId={user.id} />
+          </TabsContent>
+
+          <TabsContent value="roles" className="mt-4">
+            <RolesPanel adminId={user.id} />
+          </TabsContent>
+
+          <TabsContent value="notifications" className="mt-4">
+            <NotificationsPanel adminId={user.id} />
           </TabsContent>
 
           <TabsContent value="logs" className="mt-4">
