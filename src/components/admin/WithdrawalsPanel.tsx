@@ -96,7 +96,10 @@ export function WithdrawalsPanel({ adminId }: { adminId: string }) {
       .update({ status: "approved", processed_by: adminId, processed_at: new Date().toISOString() })
       .eq("id", String(w["id"]));
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     await logSecurity({
       adminId,
       userId: String(w["user_id"]),
@@ -116,7 +119,10 @@ export function WithdrawalsPanel({ adminId }: { adminId: string }) {
   };
 
   const confirmReject = async () => {
-    if (!reject || reason.trim().length < 3) return toast.error("Indiquez une raison.");
+    if (!reject || reason.trim().length < 3) {
+      toast.error("Indiquez une raison.");
+      return;
+    }
     setBusy(true);
     const { error } = await supabase
       .from("withdrawals")
@@ -128,7 +134,10 @@ export function WithdrawalsPanel({ adminId }: { adminId: string }) {
       })
       .eq("id", String(reject["id"]));
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     await logSecurity({
       adminId,
       userId: String(reject["user_id"]),
