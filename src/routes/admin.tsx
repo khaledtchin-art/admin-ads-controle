@@ -1,10 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import {
-  backend as supabase,
-  getAdminRole,
-  type AdminSession,
-} from "@/integrations/firebase/client";
+import { useCallback, useEffect, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
@@ -31,8 +28,26 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
+/** Vérifie le rôle super_admin dans admin_profiles (fallback : table admins historique). */
+async function fetchSuperAdmin(userId: string): Promise<boolean> {
+  const { data: adminProfile } = await supabase
+    .from("admin_profiles")
+    .select("role")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (adminProfile?.role === "super_admin") return true;
+
+  const { data: legacy } = await supabase
+    .from("admins")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "super_admin")
+    .maybeSingle();
+  return Boolean(legacy);
+}
+
 function AdminPage() {
-  const [session, setSession] = useState<AdminSession>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -48,29 +63,26 @@ function AdminPage() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const userId = session?.user?.id;
+
   useEffect(() => {
     let cancelled = false;
-    if (!session?.user) {
+    if (!userId) {
       setIsSuperAdmin(null);
       return;
     }
-    (async () => {
-      let role: string | null = null;
-      try {
-        role = await getAdminRole(session.user.id);
-      } catch {
-        role = null;
-      }
-      if (!cancelled) setIsSuperAdmin(role === "super_admin");
+    void (async () => {
+      const ok = await fetchSuperAdmin(userId).catch(() => false);
+      if (!cancelled) setIsSuperAdmin(ok);
     })();
     return () => {
       cancelled = true;
     };
-  }, [session?.user?.id]);
+  }, [userId]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-  };
+  }, []);
 
   if (!ready) return <FullScreenLoader />;
   if (!session?.user) return <AdminLogin />;

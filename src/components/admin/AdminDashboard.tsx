@@ -1,4 +1,4 @@
-import type { AdminUser as User } from "@/integrations/firebase/client";
+import type { User } from "@supabase/supabase-js";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

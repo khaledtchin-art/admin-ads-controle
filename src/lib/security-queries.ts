@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { backend as supabase } from "@/integrations/firebase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 export type Severity = "low" | "medium" | "high";
 export type AdminRoleType = "super_admin" | "support_admin" | "kyc_agent" | "finance_admin";
