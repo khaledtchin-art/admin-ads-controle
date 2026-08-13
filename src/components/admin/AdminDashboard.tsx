@@ -1,4 +1,4 @@
-import type { User } from "@supabase/supabase-js";
+import type { AdminUser as User } from "@/integrations/firebase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -136,7 +136,7 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
           </div>
           <div className="mr-auto">
             <h1 className="text-lg font-semibold leading-tight tracking-tight">Admin ADS</h1>
-            <p className="text-xs text-muted-foreground">{user.email} · super_admin</p>
+            <p className="text-xs text-muted-foreground">{user.email ?? "—"} · super_admin</p>
           </div>
           <Button variant="outline" size="sm" onClick={onSignOut}>
             <LogOut className="mr-2 size-4" /> Déconnexion
