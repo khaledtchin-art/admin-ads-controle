@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { backend as supabase, type AdminSession } from "@/integrations/firebase/client";
+import {
+  backend as supabase,
+  getAdminRole,
+  type AdminSession,
+} from "@/integrations/firebase/client";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
@@ -51,13 +55,13 @@ function AdminPage() {
       return;
     }
     (async () => {
-      const { data } = await supabase
-        .from("admins")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .eq("role", "super_admin")
-        .maybeSingle();
-      if (!cancelled) setIsSuperAdmin(Boolean(data));
+      let role: string | null = null;
+      try {
+        role = await getAdminRole(session.user.id);
+      } catch {
+        role = null;
+      }
+      if (!cancelled) setIsSuperAdmin(role === "super_admin");
     })();
     return () => {
       cancelled = true;
