@@ -15,8 +15,24 @@ export function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError("Identifiants administrateur invalides.");
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes("email not confirmed")) {
+        setError("Ce compte n'est pas encore confirmé. Valide l'email d'activation puis réessaie.");
+      } else if (msg.includes("invalid login credentials")) {
+        setError(
+          "Email ou mot de passe incorrect. Le compte doit exister dans le backend ADS (aucun mot de passe n'est codé dans l'application).",
+        );
+      } else if (msg.includes("rate limit") || msg.includes("too many")) {
+        setError("Trop de tentatives. Patiente une minute avant de réessayer.");
+      } else {
+        setError(error.message);
+      }
+    }
     setLoading(false);
   }
 
