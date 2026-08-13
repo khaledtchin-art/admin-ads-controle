@@ -77,6 +77,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          role: Database["public"]["Enums"]["admin_role_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_roles: {
         Row: {
           created_at: string
@@ -576,6 +603,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_profile_super: { Args: { _user_id: string }; Returns: boolean }
       is_any_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
