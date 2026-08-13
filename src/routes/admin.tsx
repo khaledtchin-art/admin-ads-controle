@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { backend as supabase } from "@/integrations/firebase/client";
+import { backend as supabase, type AdminSession } from "@/integrations/firebase/client";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
@@ -29,7 +28,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<AdminSession>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null);
   const [ready, setReady] = useState(false);
 
