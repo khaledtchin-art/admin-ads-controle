@@ -262,3 +262,10 @@ export const backend = {
     },
   },
 };
+
+/** Lecture directe du document admins/{uid} (compatible avec les règles Firestore). */
+export async function getAdminRole(uid: string): Promise<string | null> {
+  const { getDoc } = await import("firebase/firestore");
+  const snap = await getDoc(doc(firestore, "admins", uid));
+  return snap.exists() ? String((snap.data() as Row)["role"] ?? "") || null : null;
+}
