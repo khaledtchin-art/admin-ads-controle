@@ -12,7 +12,6 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { initAnalytics } from "@/integrations/firebase/client";
 
 function NotFoundComponent() {
   return (
@@ -118,10 +117,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
-  useEffect(() => {
-    void initAnalytics().catch(() => null);
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
