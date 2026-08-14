@@ -86,10 +86,27 @@ function AdminPage() {
     await supabase.auth.signOut();
   }, []);
 
+  /** Revalide la session auprès du serveur d'auth (après clic sur le lien de confirmation). */
+  const recheck = useCallback(async () => {
+    const { data: refreshed } = await supabase.auth.refreshSession();
+    if (refreshed.session) {
+      setSession(refreshed.session);
+      return Boolean(refreshed.session.user.email_confirmed_at);
+    }
+    const { data } = await supabase.auth.getUser();
+    return Boolean(data.user?.email_confirmed_at);
+  }, []);
+
   if (!ready) return <FullScreenLoader />;
   if (!session?.user) return <AdminLogin />;
   if (!session.user.email_confirmed_at)
-    return <EmailNotConfirmed email={session.user.email ?? undefined} onSignOut={signOut} />;
+    return (
+      <EmailNotConfirmed
+        email={session.user.email ?? undefined}
+        onSignOut={signOut}
+        onRecheck={recheck}
+      />
+    );
   if (isSuperAdmin === null) return <FullScreenLoader />;
   if (!isSuperAdmin)
     return <AccessDenied email={session.user.email ?? undefined} onSignOut={signOut} />;
@@ -100,11 +117,14 @@ function AdminPage() {
 function EmailNotConfirmed({
   email,
   onSignOut,
+  onRecheck,
 }: {
   email?: string | undefined;
   onSignOut: () => void;
+  onRecheck: () => Promise<boolean>;
 }) {
   const [sending, setSending] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   async function resend() {
     if (!email) return;
@@ -115,8 +135,25 @@ function EmailNotConfirmed({
       options: { emailRedirectTo: `${window.location.origin}/admin` },
     });
     setSending(false);
-    if (error) toast.error(error.message);
-    else toast.success("Email de confirmation renvoyé.");
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes("rate") || msg.includes("too many") || msg.includes("security purposes")) {
+        toast.error("Trop de demandes. Patiente une minute avant de renvoyer l'email.");
+      } else if (msg.includes("already confirmed")) {
+        toast.success("Cette adresse est déjà confirmée — reconnecte-toi.");
+      } else {
+        toast.error(error.message);
+      }
+    } else {
+      toast.success(`Email de confirmation renvoyé à ${email}.`);
+    }
+  }
+
+  async function recheck() {
+    setChecking(true);
+    const ok = await onRecheck().catch(() => false);
+    setChecking(false);
+    if (!ok) toast.error("L'adresse n'est toujours pas confirmée.");
   }
 
   return (
@@ -135,6 +172,10 @@ function EmailNotConfirmed({
           <Button onClick={resend} disabled={sending || !email}>
             {sending && <LoaderIcon className="mr-2 size-4 animate-spin" />}
             Renvoyer l'email
+          </Button>
+          <Button variant="secondary" onClick={recheck} disabled={checking}>
+            {checking && <LoaderIcon className="mr-2 size-4 animate-spin" />}
+            J'ai confirmé
           </Button>
           <Button variant="outline" onClick={onSignOut}>
             Changer de compte
