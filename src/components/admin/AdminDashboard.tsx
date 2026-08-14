@@ -39,6 +39,7 @@ import { FinancePanel } from "./FinancePanel";
 import { RolesPanel } from "./RolesPanel";
 import { NotificationsPanel } from "./NotificationsPanel";
 import { SystemPanel } from "./SystemPanel";
+import { AdminProfilesPanel } from "./AdminProfilesPanel";
 
 type Row = Record<string, unknown>;
 
@@ -432,7 +433,10 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
           </TabsContent>
 
           <TabsContent value="roles" className="mt-4">
-            <RolesPanel adminId={user.id} />
+            <div className="space-y-4">
+              <AdminProfilesPanel adminId={user.id} />
+              <RolesPanel adminId={user.id} />
+            </div>
           </TabsContent>
 
           <TabsContent value="notifications" className="mt-4">
