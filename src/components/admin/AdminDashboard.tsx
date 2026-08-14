@@ -23,6 +23,7 @@ import {
   ArrowUpFromLine,
   LogOut,
   ShieldCheck,
+  Server,
 } from "lucide-react";
 import {
   money,
@@ -37,6 +38,7 @@ import { SecurityPanel } from "./SecurityPanel";
 import { FinancePanel } from "./FinancePanel";
 import { RolesPanel } from "./RolesPanel";
 import { NotificationsPanel } from "./NotificationsPanel";
+import { SystemPanel } from "./SystemPanel";
 
 type Row = Record<string, unknown>;
 
@@ -172,6 +174,7 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
             <TabsTrigger value="roles"><Users className="mr-2 size-4" />Rôles</TabsTrigger>
             <TabsTrigger value="notifications"><ScrollText className="mr-2 size-4" />Notifications</TabsTrigger>
             <TabsTrigger value="logs"><ScrollText className="mr-2 size-4" />Logs</TabsTrigger>
+            <TabsTrigger value="system"><Server className="mr-2 size-4" />Système</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="mt-4">
@@ -434,6 +437,10 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
 
           <TabsContent value="notifications" className="mt-4">
             <NotificationsPanel adminId={user.id} />
+          </TabsContent>
+
+          <TabsContent value="system" className="mt-4">
+            <SystemPanel email={user.email ?? undefined} />
           </TabsContent>
 
           <TabsContent value="logs" className="mt-4">
