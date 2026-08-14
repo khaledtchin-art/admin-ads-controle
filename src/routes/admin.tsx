@@ -5,7 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
-import { Loader2 } from "lucide-react";
+import { Loader2, MailCheck, Loader as LoaderIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -86,11 +88,61 @@ function AdminPage() {
 
   if (!ready) return <FullScreenLoader />;
   if (!session?.user) return <AdminLogin />;
+  if (!session.user.email_confirmed_at)
+    return <EmailNotConfirmed email={session.user.email ?? undefined} onSignOut={signOut} />;
   if (isSuperAdmin === null) return <FullScreenLoader />;
   if (!isSuperAdmin)
     return <AccessDenied email={session.user.email ?? undefined} onSignOut={signOut} />;
 
   return <AdminDashboard user={session.user} onSignOut={signOut} />;
+}
+
+function EmailNotConfirmed({
+  email,
+  onSignOut,
+}: {
+  email?: string | undefined;
+  onSignOut: () => void;
+}) {
+  const [sending, setSending] = useState(false);
+
+  async function resend() {
+    if (!email) return;
+    setSending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/admin` },
+    });
+    setSending(false);
+    if (error) toast.error(error.message);
+    else toast.success("Email de confirmation renvoyé.");
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-[var(--shadow-panel)]">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary/15">
+          <MailCheck className="size-6 text-primary" />
+        </div>
+        <h1 className="mt-5 text-xl font-semibold tracking-tight">Email non confirmé</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          L'accès à l'espace d'administration ADS exige une adresse email vérifiée. Ouvre le lien de
+          confirmation envoyé à {email ? <span className="text-foreground">{email}</span> : "ton adresse"}, puis
+          reconnecte-toi.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <Button onClick={resend} disabled={sending || !email}>
+            {sending && <LoaderIcon className="mr-2 size-4 animate-spin" />}
+            Renvoyer l'email
+          </Button>
+          <Button variant="outline" onClick={onSignOut}>
+            Changer de compte
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function FullScreenLoader() {
