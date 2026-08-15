@@ -51,7 +51,7 @@ export function SystemPanel({ email }: { email?: string | undefined }) {
       Promise.all(
         TABLES.map(async (table) => {
           const { count, error } = await supabase
-            .from(table)
+            .from(table as never)
             .select("*", { count: "exact", head: true });
           return { table, count: count ?? null, error: error?.message ?? null };
         }),
