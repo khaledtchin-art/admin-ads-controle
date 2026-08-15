@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/ads/client";
 
 export type Severity = "low" | "medium" | "high";
 export type AdminRoleType = "super_admin" | "support_admin" | "kyc_agent" | "finance_admin";

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/ads/client";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
