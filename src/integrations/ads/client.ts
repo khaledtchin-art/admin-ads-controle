@@ -1,7 +1,7 @@
 // Client de la plateforme ADS principale (https://ads-site-niger.lovable.app).
 // Toute la console admin lit et écrit dans CETTE instance.
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+
 
 export const ADS_SUPABASE_URL =
   (import.meta.env["VITE_ADS_SUPABASE_URL"] as string | undefined) ??
@@ -25,7 +25,7 @@ function adsFetch(key: string): typeof fetch {
 }
 
 function createAdsClient() {
-  return createClient<Database>(ADS_SUPABASE_URL, ADS_SUPABASE_PUBLISHABLE_KEY, {
+  return createClient(ADS_SUPABASE_URL, ADS_SUPABASE_PUBLISHABLE_KEY, {
     global: { fetch: adsFetch(ADS_SUPABASE_PUBLISHABLE_KEY) },
     auth: {
       storage: typeof window !== "undefined" ? localStorage : undefined,
