@@ -5,26 +5,33 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
 
+// Tables réelles de la plateforme ADS — aucune table générée ici.
 const TABLES = [
   "profiles",
-  "wallets",
-  "transactions",
-  "deposits",
-  "withdrawals",
-  "kyc_submissions",
-  "marketplace_items",
-  "referrals",
-  "notifications",
-  "security_logs",
-  "admin_logs",
-  "admin_profiles",
-  "admin_roles",
-  // Tables de la plateforme ADS Niger
   "account_validations",
+  "access_tokens",
+  "transactions",
   "retraits",
   "produits",
+  "achats",
+  "avis",
+  "parrainages",
+  "notifications",
+  "messages_admin",
+  "promo_codes",
+  "evenements",
   "journal",
+  "recus",
+  "temoignages",
+  "stories",
+  "versions_app",
+  "ambassadeurs",
+  "formations",
+  "progressions_formations",
+  "partenaires",
   "parametres",
+  "moyens_paiement",
+  "configuration_agregateurs",
 ] as const;
 
 type TableRowInfo = { table: string; count: number | null; error: string | null };
