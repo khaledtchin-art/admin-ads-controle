@@ -30,22 +30,11 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-/** Vérifie le rôle super_admin dans admin_profiles (fallback : table admins historique). */
+/** Vérifie le rôle admin dans la table `profiles` de la base ADS. */
 async function fetchSuperAdmin(userId: string): Promise<boolean> {
-  const { data: adminProfile } = await supabase
-    .from("admin_profiles")
-    .select("role")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (adminProfile?.role === "super_admin") return true;
-
-  const { data: legacy } = await supabase
-    .from("admins")
-    .select("role")
-    .eq("user_id", userId)
-    .eq("role", "super_admin")
-    .maybeSingle();
-  return Boolean(legacy);
+  const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+  const role = String((data as { role?: unknown } | null)?.role ?? "").toLowerCase();
+  return role === "super_admin" || role === "admin";
 }
 
 function AdminPage() {
