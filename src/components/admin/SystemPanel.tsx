@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, ADS_SUPABASE_URL } from "@/integrations/ads/client";
 import { Panel } from "./ui";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,12 +19,18 @@ const TABLES = [
   "admin_logs",
   "admin_profiles",
   "admin_roles",
+  // Tables de la plateforme ADS Niger
+  "account_validations",
+  "retraits",
+  "produits",
+  "journal",
+  "parametres",
 ] as const;
 
 type TableRowInfo = { table: string; count: number | null; error: string | null };
 
 function instanceInfo() {
-  const url = import.meta.env["VITE_SUPABASE_URL"] ?? "";
+  const url = ADS_SUPABASE_URL;
   let host = "—";
   let ref = "—";
   try {
@@ -45,7 +51,7 @@ export function SystemPanel({ email }: { email?: string | undefined }) {
       Promise.all(
         TABLES.map(async (table) => {
           const { count, error } = await supabase
-            .from(table)
+            .from(table as never)
             .select("*", { count: "exact", head: true });
           return { table, count: count ?? null, error: error?.message ?? null };
         }),
