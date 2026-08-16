@@ -28,6 +28,8 @@ export const ADS_TABLES = [
   "parametres",
   "moyens_paiement",
   "configuration_agregateurs",
+  "tickets_evenements",
+  "qr_scans_log",
 ] as const;
 
 export type AdsTable = (typeof ADS_TABLES)[number];
