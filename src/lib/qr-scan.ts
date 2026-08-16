@@ -1,0 +1,219 @@
+import { supabase } from "@/integrations/ads/client";
+import { logJournal, type Row } from "@/lib/ads-queries";
+
+export type ScanKind = "ticket" | "recu" | "profil";
+export type ScanOutcome = "valide" | "invalide" | "deja_utilise";
+
+export type ScanResult = {
+  kind: ScanKind;
+  outcome: ScanOutcome;
+  raw: string;
+  title: string;
+  message: string;
+  profile?: Row | undefined;
+  ticket?: Row | undefined;
+  evenement?: Row | undefined;
+  recu?: Row | undefined;
+  transaction?: Row | undefined;
+};
+
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+/** Extrait l'identifiant utile d'un QR (texte brut, URL ou JSON). */
+export function extractToken(raw: string): string {
+  const value = raw.trim();
+  if (value.startsWith("{")) {
+    try {
+      const o = JSON.parse(value) as Record<string, unknown>;
+      const k = o["qr"] ?? o["id"] ?? o["ticket"] ?? o["user_id"] ?? o["code"];
+      if (k) return String(k);
+    } catch {
+      /* ignore */
+    }
+  }
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      const u = new URL(value);
+      const inQuery = ["id", "code", "ref", "ticket", "user"].map((p) => u.searchParams.get(p)).find(Boolean);
+      if (inQuery) return inQuery;
+      const seg = u.pathname.split("/").filter(Boolean).pop();
+      if (seg) return decodeURIComponent(seg);
+    } catch {
+      /* ignore */
+    }
+  }
+  const m = UUID.exec(value);
+  return m ? m[0] : value;
+}
+
+async function fetchProfile(userId: unknown): Promise<Row | undefined> {
+  if (!userId) return undefined;
+  const { data } = await supabase.from("profiles").select("*").eq("id", String(userId)).maybeSingle();
+  return (data as Row | null) ?? undefined;
+}
+
+async function logScan(input: {
+  kind: ScanKind;
+  outcome: ScanOutcome;
+  raw: string;
+  adminId: string | undefined;
+  userId?: unknown;
+}) {
+  await supabase
+    .from("qr_scans_log")
+    .insert({
+      type_scan: input.kind,
+      scanne_par: input.adminId ?? null,
+      qr_data_scanne: input.raw.slice(0, 500),
+      resultat: input.outcome,
+      user_concerne_id: input.userId ? String(input.userId) : null,
+    })
+    .then(() => undefined, () => undefined);
+  await logJournal({
+    userId: input.adminId,
+    action: `scan_${input.kind}`,
+    description: `${input.outcome} · ${input.raw.slice(0, 120)}`,
+  }).catch(() => undefined);
+}
+
+/* --------------------------------- Ticket -------------------------------- */
+
+export async function scanTicket(raw: string, adminId: string | undefined): Promise<ScanResult> {
+  const token = extractToken(raw);
+  const { data } = await supabase
+    .from("tickets_evenements")
+    .select("*")
+    .or(`qr_code_unique.eq.${token},id.eq.${UUID.test(token) ? token : "00000000-0000-0000-0000-000000000000"}`)
+    .maybeSingle();
+  const ticket = (data as Row | null) ?? undefined;
+
+  if (!ticket) {
+    const res: ScanResult = {
+      kind: "ticket",
+      outcome: "invalide",
+      raw,
+      title: "Ticket introuvable",
+      message: "Aucun ticket ne correspond à ce QR code.",
+    };
+    await logScan({ kind: "ticket", outcome: "invalide", raw, adminId });
+    return res;
+  }
+
+  const statut = String(ticket["statut"] ?? "").toLowerCase();
+  const [profile, evenement] = await Promise.all([
+    fetchProfile(ticket["user_id"]),
+    ticket["evenement_id"]
+      ? supabase
+          .from("evenements")
+          .select("*")
+          .eq("id", String(ticket["evenement_id"]))
+          .maybeSingle()
+          .then(({ data: e }) => (e as Row | null) ?? undefined)
+      : Promise.resolve(undefined),
+  ]);
+
+  const outcome: ScanOutcome =
+    statut === "utilise" ? "deja_utilise" : statut === "valide" || statut === "" ? "valide" : "invalide";
+
+  await logScan({ kind: "ticket", outcome, raw, adminId, userId: ticket["user_id"] });
+
+  return {
+    kind: "ticket",
+    outcome,
+    raw,
+    title:
+      outcome === "valide"
+        ? "Ticket valide"
+        : outcome === "deja_utilise"
+          ? "TICKET DÉJÀ UTILISÉ"
+          : `Ticket ${statut || "invalide"}`,
+    message:
+      outcome === "deja_utilise"
+        ? `Scanné le ${ticket["date_scan"] ? new Date(String(ticket["date_scan"])).toLocaleString("fr-FR") : "—"}`
+        : "Contrôle de l'entrée autorisé.",
+    ticket,
+    profile,
+    evenement,
+  };
+}
+
+export async function validerEntree(ticketId: string, adminId: string | undefined) {
+  const { error } = await supabase
+    .from("tickets_evenements")
+    .update({ statut: "utilise", date_scan: new Date().toISOString(), scanne_par: adminId ?? null })
+    .eq("id", ticketId);
+  if (error) throw error;
+  await logJournal({ userId: adminId, action: "ticket_valide", description: ticketId }).catch(() => undefined);
+}
+
+/* ---------------------------------- Reçu --------------------------------- */
+
+export async function scanRecu(raw: string, adminId: string | undefined): Promise<ScanResult> {
+  const token = extractToken(raw);
+  const isUuid = UUID.test(token);
+  let recu: Row | undefined;
+  if (isUuid) {
+    const { data } = await supabase
+      .from("recus")
+      .select("*")
+      .or(`id.eq.${token},transaction_id.eq.${token}`)
+      .maybeSingle();
+    recu = (data as Row | null) ?? undefined;
+  }
+
+  let transaction: Row | undefined;
+  const txId = recu?.["transaction_id"] ?? (isUuid ? token : undefined);
+  if (txId) {
+    const { data } = await supabase.from("transactions").select("*").eq("id", String(txId)).maybeSingle();
+    transaction = (data as Row | null) ?? undefined;
+  }
+
+  const ok = Boolean(recu ?? transaction);
+  const profile = await fetchProfile(recu?.["user_id"] ?? transaction?.["user_id"]);
+  const outcome: ScanOutcome = ok ? "valide" : "invalide";
+  await logScan({ kind: "recu", outcome, raw, adminId, userId: recu?.["user_id"] ?? transaction?.["user_id"] });
+
+  return {
+    kind: "recu",
+    outcome,
+    raw,
+    title: ok ? "Reçu authentique" : "Reçu falsifié ou introuvable",
+    message: ok ? "Le reçu correspond à une transaction enregistrée." : "Aucune correspondance en base ADS.",
+    recu,
+    transaction,
+    profile,
+  };
+}
+
+/* --------------------------------- Profil -------------------------------- */
+
+export async function scanProfil(raw: string, adminId: string | undefined): Promise<ScanResult> {
+  const token = extractToken(raw);
+  let profile = UUID.test(token) ? await fetchProfile(token) : undefined;
+  if (!profile) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .or(`code_parrainage.eq.${token},numero_membre.eq.${token}`)
+      .maybeSingle();
+    profile = (data as Row | null) ?? undefined;
+  }
+  const outcome: ScanOutcome = profile ? "valide" : "invalide";
+  await logScan({ kind: "profil", outcome, raw, adminId, userId: profile?.["id"] });
+  return {
+    kind: "profil",
+    outcome,
+    raw,
+    title: profile ? "Membre vérifié ADS" : "Membre introuvable",
+    message: profile
+      ? `Compte ${String(profile["statut"] ?? "actif")}`
+      : "Ce QR code ne correspond à aucun compte ADS.",
+    profile,
+  };
+}
+
+export async function runScan(kind: ScanKind, raw: string, adminId: string | undefined) {
+  if (kind === "ticket") return scanTicket(raw, adminId);
+  if (kind === "recu") return scanRecu(raw, adminId);
+  return scanProfil(raw, adminId);
+}
