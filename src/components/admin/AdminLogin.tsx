@@ -1,25 +1,38 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { supabase } from "@/integrations/ads/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShieldCheck, Loader2 } from "lucide-react";
 
+const HCAPTCHA_SITE_KEY =
+  (import.meta.env["VITE_ADS_HCAPTCHA_SITE_KEY"] as string | undefined)?.trim() || "";
+
 export function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (HCAPTCHA_SITE_KEY && !captchaToken) {
+      setError("Complète la vérification anti-robot avant de continuer.");
+      return;
+    }
     setLoading(true);
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
+      ...(captchaToken ? { options: { captchaToken } } : {}),
     });
     if (error) {
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
       const msg = error.message.toLowerCase();
       if (msg.includes("email not confirmed")) {
         setError("Ce compte n'est pas encore confirmé. Valide l'email d'activation puis réessaie.");
@@ -29,6 +42,12 @@ export function AdminLogin() {
         );
       } else if (msg.includes("rate limit") || msg.includes("too many")) {
         setError("Trop de tentatives. Patiente une minute avant de réessayer.");
+      } else if (msg.includes("captcha")) {
+        setError(
+          HCAPTCHA_SITE_KEY
+            ? "Vérification anti-robot refusée. Réessaie la case hCaptcha."
+            : "Le captcha est activé côté backend ADS : renseigne la clé de site hCaptcha (VITE_ADS_HCAPTCHA_SITE_KEY).",
+        );
       } else {
         setError(error.message);
       }
@@ -73,6 +92,17 @@ export function AdminLogin() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          {HCAPTCHA_SITE_KEY && (
+            <div className="flex justify-center">
+              <HCaptcha
+                ref={captchaRef}
+                sitekey={HCAPTCHA_SITE_KEY}
+                theme="dark"
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken(null)}
+              />
+            </div>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
