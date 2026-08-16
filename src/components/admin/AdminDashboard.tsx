@@ -7,6 +7,7 @@ import { Stat } from "./ui";
 import { SystemPanel } from "./SystemPanel";
 import { JournalPanel } from "./JournalPanel";
 import { ValidationsPanel } from "./ValidationsPanel";
+import { ScannerPanel } from "./ScannerPanel";
 import {
   BoutiquePanel,
   ParrainagesPanel,
@@ -77,6 +78,7 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
           <TabsList className="flex w-full flex-wrap justify-start">
             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
             <TabsTrigger value="validations">Validations (KYC)</TabsTrigger>
+            <TabsTrigger value="scanner">📷 Scanner QR</TabsTrigger>
             <TabsTrigger value="retraits">Retraits</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="boutique">Boutique</TabsTrigger>
@@ -90,6 +92,9 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
           </TabsContent>
           <TabsContent value="validations" className="mt-4">
             <ValidationsPanel adminId={adminId} />
+          </TabsContent>
+          <TabsContent value="scanner" className="mt-4">
+            <ScannerPanel adminId={adminId} />
           </TabsContent>
           <TabsContent value="retraits" className="mt-4">
             <RetraitsPanel adminId={adminId} />
