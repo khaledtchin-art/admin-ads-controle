@@ -150,6 +150,8 @@ export function ValidationsPanel({ adminId }: { adminId: string | undefined }) {
           </TableBody>
         </Table>
       </Panel>
+
+      <ValidationDetailDialog row={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }
