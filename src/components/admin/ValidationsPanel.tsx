@@ -122,6 +122,9 @@ export function ValidationsPanel({ adminId }: { adminId: string | undefined }) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setDetail(r)}>
+                        <Eye className="mr-1 size-3.5" /> Détails
+                      </Button>
                       <Button
                         size="sm"
                         disabled={update.isPending}
