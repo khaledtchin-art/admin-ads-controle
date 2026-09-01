@@ -18,10 +18,17 @@ import { shortDate, shortId, type Row } from "@/lib/ads-queries";
 
 const PAGE_SIZE = 25;
 
-type Filters = { action: string; userId: string; from: string; to: string };
+type Filters = { q: string; action: string; userId: string; from: string; to: string };
+
+const EMPTY_FILTERS: Filters = { q: "", action: "", userId: "", from: "", to: "" };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Échappe les caractères spéciaux du filtre `or=` de PostgREST. */
+const esc = (v: string) => v.replace(/[(),*]/g, " ").trim();
 
 export function JournalPanel() {
-  const [filters, setFilters] = useState<Filters>({ action: "", userId: "", from: "", to: "" });
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(filters);
   const [page, setPage] = useState(0);
 
