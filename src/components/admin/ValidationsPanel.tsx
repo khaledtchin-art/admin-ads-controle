@@ -21,6 +21,7 @@ export function ValidationsPanel({ adminId }: { adminId: string | undefined }) {
   const q = useAdsTable("account_validations", 300);
   const update = useAdsUpdate(adminId);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("tous");
+  const [detail, setDetail] = useState<Row | null>(null);
 
   const rows = (q.data ?? []) as Row[];
   const shown = useMemo(
