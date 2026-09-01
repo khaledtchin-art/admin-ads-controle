@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search } from "lucide-react";
 import { shortDate, shortId, type Row } from "@/lib/ads-queries";
 
 const PAGE_SIZE = 25;
