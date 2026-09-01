@@ -9,9 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Check, Loader2, RefreshCw, X } from "lucide-react";
+import { Check, Eye, Loader2, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import { money, shortDate, shortId, useAdsTable, useAdsUpdate, type Row } from "@/lib/ads-queries";
+import { ValidationDetailDialog } from "./ValidationDetailDialog";
 
 const FILTERS = ["tous", "en_attente", "valide", "rejete"] as const;
 
@@ -20,6 +21,7 @@ export function ValidationsPanel({ adminId }: { adminId: string | undefined }) {
   const q = useAdsTable("account_validations", 300);
   const update = useAdsUpdate(adminId);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("tous");
+  const [detail, setDetail] = useState<Row | null>(null);
 
   const rows = (q.data ?? []) as Row[];
   const shown = useMemo(
@@ -120,6 +122,9 @@ export function ValidationsPanel({ adminId }: { adminId: string | undefined }) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setDetail(r)}>
+                        <Eye className="mr-1 size-3.5" /> Détails
+                      </Button>
                       <Button
                         size="sm"
                         disabled={update.isPending}
@@ -145,6 +150,8 @@ export function ValidationsPanel({ adminId }: { adminId: string | undefined }) {
           </TableBody>
         </Table>
       </Panel>
+
+      <ValidationDetailDialog row={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }

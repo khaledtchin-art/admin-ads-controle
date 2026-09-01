@@ -13,15 +13,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search } from "lucide-react";
 import { shortDate, shortId, type Row } from "@/lib/ads-queries";
 
 const PAGE_SIZE = 25;
 
-type Filters = { action: string; userId: string; from: string; to: string };
+type Filters = { q: string; action: string; userId: string; from: string; to: string };
+
+const EMPTY_FILTERS: Filters = { q: "", action: "", userId: "", from: "", to: "" };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Échappe les caractères spéciaux du filtre `or=` de PostgREST. */
+const esc = (v: string) => v.replace(/[(),*]/g, " ").trim();
 
 export function JournalPanel() {
-  const [filters, setFilters] = useState<Filters>({ action: "", userId: "", from: "", to: "" });
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(filters);
   const [page, setPage] = useState(0);
 
@@ -33,6 +40,12 @@ export function JournalPanel() {
         .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+      const term = esc(applied.q);
+      if (term) {
+        const ors = [`action.ilike.%${term}%`, `description.ilike.%${term}%`];
+        if (UUID_RE.test(term)) ors.push(`user_id.eq.${term}`);
+        q = q.or(ors.join(","));
+      }
       if (applied.action.trim()) q = q.ilike("action", `%${applied.action.trim()}%`);
       if (applied.userId.trim()) q = q.eq("user_id", applied.userId.trim());
       if (applied.from) q = q.gte("created_at", new Date(applied.from).toISOString());
@@ -85,6 +98,21 @@ export function JournalPanel() {
           </Button>
         }
       >
+        <div className="mb-3">
+          <Field label="Recherche rapide (action, description ou user_id)">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                value={filters.q}
+                onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && apply()}
+                placeholder="Ex. retrait, validation KYC, 3f2a…-uuid complet"
+              />
+            </div>
+          </Field>
+        </div>
+
         <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Field label="Action">
             <Input
@@ -121,9 +149,8 @@ export function JournalPanel() {
             <Button
               variant="outline"
               onClick={() => {
-                const empty = { action: "", userId: "", from: "", to: "" };
-                setFilters(empty);
-                setApplied(empty);
+                setFilters(EMPTY_FILTERS);
+                setApplied(EMPTY_FILTERS);
                 setPage(0);
               }}
             >
