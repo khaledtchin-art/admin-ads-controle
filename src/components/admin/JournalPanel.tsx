@@ -98,6 +98,21 @@ export function JournalPanel() {
           </Button>
         }
       >
+        <div className="mb-3">
+          <Field label="Recherche rapide (action, description ou user_id)">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                value={filters.q}
+                onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && apply()}
+                placeholder="Ex. retrait, validation KYC, 3f2a…-uuid complet"
+              />
+            </div>
+          </Field>
+        </div>
+
         <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Field label="Action">
             <Input
