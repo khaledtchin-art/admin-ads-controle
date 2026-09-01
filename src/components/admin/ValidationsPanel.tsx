@@ -9,9 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Check, Loader2, RefreshCw, X } from "lucide-react";
+import { Check, Eye, Loader2, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import { money, shortDate, shortId, useAdsTable, useAdsUpdate, type Row } from "@/lib/ads-queries";
+import { ValidationDetailDialog } from "./ValidationDetailDialog";
 
 const FILTERS = ["tous", "en_attente", "valide", "rejete"] as const;
 
