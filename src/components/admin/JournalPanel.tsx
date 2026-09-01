@@ -40,6 +40,12 @@ export function JournalPanel() {
         .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+      const term = esc(applied.q);
+      if (term) {
+        const ors = [`action.ilike.%${term}%`, `description.ilike.%${term}%`];
+        if (UUID_RE.test(term)) ors.push(`user_id.eq.${term}`);
+        q = q.or(ors.join(","));
+      }
       if (applied.action.trim()) q = q.ilike("action", `%${applied.action.trim()}%`);
       if (applied.userId.trim()) q = q.eq("user_id", applied.userId.trim());
       if (applied.from) q = q.gte("created_at", new Date(applied.from).toISOString());
