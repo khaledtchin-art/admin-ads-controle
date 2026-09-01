@@ -149,9 +149,8 @@ export function JournalPanel() {
             <Button
               variant="outline"
               onClick={() => {
-                const empty = { action: "", userId: "", from: "", to: "" };
-                setFilters(empty);
-                setApplied(empty);
+                setFilters(EMPTY_FILTERS);
+                setApplied(EMPTY_FILTERS);
                 setPage(0);
               }}
             >
