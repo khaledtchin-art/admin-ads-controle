@@ -16,6 +16,8 @@ import {
   UsersPanel,
 } from "./AdsPanels";
 import { money, useAdsTable } from "@/lib/ads-queries";
+import { AlertsBell } from "./AlertsBell";
+import { useAdsAlerts } from "@/lib/ads-alerts";
 
 export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () => void }) {
   const adminId = user.id;
