@@ -10,6 +10,7 @@ export type ScanResult = {
   raw: string;
   title: string;
   message: string;
+  photoUrl?: string | undefined;
   profile?: Row | undefined;
   ticket?: Row | undefined;
   evenement?: Row | undefined;
