@@ -56,10 +56,11 @@ export function ScannerPanel({ adminId }: { adminId: string | undefined }) {
 
   async function valider() {
     const id = result?.ticket?.["id"];
-    if (!id) return;
+    const qr = result?.ticket?.["qr_code_unique"];
+    if (!id && !qr) return;
     try {
-      await validerEntree(String(id), adminId);
-      toast.success("Entrée validée.");
+      const msg = await validerEntree(String(id ?? ""), adminId, qr ? String(qr) : undefined);
+      toast.success(msg);
       setResult({ ...result!, outcome: "deja_utilise", title: "Entrée validée", message: "Ticket marqué comme utilisé." });
       void tickets.refetch();
     } catch (e) {
