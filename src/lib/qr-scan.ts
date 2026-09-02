@@ -181,7 +181,18 @@ export async function scanTicket(raw: string, adminId: string | undefined): Prom
   };
 }
 
-export async function validerEntree(ticketId: string, adminId: string | undefined) {
+/** Valide l'entrée via la fonction ADS, avec repli sur une mise à jour directe. */
+export async function validerEntree(ticketId: string, adminId: string | undefined, qrCode?: string) {
+  if (qrCode) {
+    const res = await rpc("valider_ticket_scan", { qr_code: qrCode, admin_id: adminId ?? null });
+    if (res) {
+      const ok = res["success"] !== false;
+      const message = String(res["message"] ?? (ok ? "Entrée validée." : "Validation refusée."));
+      if (!ok) throw new Error(message);
+      await logJournal({ userId: adminId, action: "ticket_valide", description: qrCode }).catch(() => undefined);
+      return message;
+    }
+  }
   const { error } = await supabase
     .from("tickets_evenements")
     .update({ statut: "utilise", date_scan: new Date().toISOString(), scanne_par: adminId ?? null })
