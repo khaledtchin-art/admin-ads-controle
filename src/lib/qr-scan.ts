@@ -245,6 +245,23 @@ export async function scanRecu(raw: string, adminId: string | undefined): Promis
 
 export async function scanProfil(raw: string, adminId: string | undefined): Promise<ScanResult> {
   const token = extractToken(raw);
+
+  const v = await rpc("verifier_qr_membre", { qr_code: token });
+  if (v) {
+    const statut = String(v["statut"] ?? "actif").toLowerCase();
+    const outcome: ScanOutcome = statut === "actif" || statut === "" ? "valide" : "invalide";
+    await logScan({ kind: "profil", outcome, raw, adminId, userId: v["user_id"] ?? v["id"] });
+    return {
+      kind: "profil",
+      outcome,
+      raw,
+      title: outcome === "valide" ? "Membre vérifié ✅" : `Compte ${statut}`,
+      message: outcome === "valide" ? "Identité confirmée sur la base ADS." : "Ce compte n'est pas actif.",
+      photoUrl: (v["photo_url"] ?? v["photo"] ?? undefined) as string | undefined,
+      profile: v,
+    };
+  }
+
   let profile = UUID.test(token) ? await fetchProfile(token) : undefined;
   if (!profile) {
     const { data } = await supabase
