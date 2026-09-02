@@ -199,6 +199,7 @@ export async function validerEntree(ticketId: string, adminId: string | undefine
     .eq("id", ticketId);
   if (error) throw error;
   await logJournal({ userId: adminId, action: "ticket_valide", description: ticketId }).catch(() => undefined);
+  return "Entrée validée.";
 }
 
 /* ---------------------------------- Reçu --------------------------------- */
