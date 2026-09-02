@@ -61,9 +61,12 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={onSignOut}>
-            <LogOut className="mr-2 size-4" /> Déconnexion
-          </Button>
+          <div className="flex items-center gap-2">
+            <AlertsBell alerts={alerts} unread={unread} onOpen={markAllRead} onClear={clear} />
+            <Button variant="outline" size="sm" onClick={onSignOut}>
+              <LogOut className="mr-2 size-4" /> Déconnexion
+            </Button>
+          </div>
         </div>
       </header>
 
