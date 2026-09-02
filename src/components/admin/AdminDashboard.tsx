@@ -21,6 +21,7 @@ import { useAdsAlerts } from "@/lib/ads-alerts";
 
 export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () => void }) {
   const adminId = user.id;
+  const { alerts, unread, markAllRead, clear } = useAdsAlerts();
   const profiles = useAdsTable("profiles", 1000);
   const transactions = useAdsTable("transactions", 1000);
   const retraits = useAdsTable("retraits", 1000);
