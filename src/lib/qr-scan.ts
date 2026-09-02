@@ -79,8 +79,51 @@ async function logScan(input: {
 
 /* --------------------------------- Ticket -------------------------------- */
 
+/**
+ * Appelle une fonction SQL de la base ADS. Renvoie `null` si la fonction est
+ * absente ou en erreur (on retombe alors sur la lecture directe des tables).
+ */
+async function rpc(name: string, args: Record<string, unknown>): Promise<Row | null> {
+  try {
+    const { data, error } = await supabase.rpc(name, args);
+    if (error || data == null) return null;
+    const row = Array.isArray(data) ? (data[0] as Row | undefined) : (data as Row);
+    return row ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function scanTicket(raw: string, adminId: string | undefined): Promise<ScanResult> {
   const token = extractToken(raw);
+
+  // 1) Fonction dédiée côté ADS
+  const v = await rpc("verifier_qr_ticket", { qr_code: token });
+  if (v) {
+    const statut = String(v["statut"] ?? v["statut_ticket"] ?? "").toLowerCase();
+    const outcome: ScanOutcome = statut === "utilise" ? "deja_utilise" : statut === "valide" || statut === "" ? "valide" : "invalide";
+    const dateScan = v["date_scan"] ? new Date(String(v["date_scan"])).toLocaleString("fr-FR") : "—";
+    await logScan({ kind: "ticket", outcome, raw, adminId, userId: v["user_id"] });
+    return {
+      kind: "ticket",
+      outcome,
+      raw,
+      title:
+        outcome === "valide" ? "Ticket valide" : outcome === "deja_utilise" ? `DÉJÀ UTILISÉ le ${dateScan}` : `Ticket ${statut || "invalide"}`,
+      message: outcome === "valide" ? "Contrôle de l'entrée autorisé." : "Entrée refusée.",
+      photoUrl: (v["photo_url"] ?? v["photo"] ?? undefined) as string | undefined,
+      ticket: { ...v, id: v["ticket_id"] ?? v["id"], qr_code_unique: token },
+      profile: {
+        id: v["user_id"],
+        nom: v["nom"] ?? v["nom_membre"],
+        numero_membre: v["numero_membre"],
+        niveau: v["niveau"],
+        statut: v["statut_compte"],
+      } as Row,
+      evenement: { titre: v["titre_evenement"] ?? v["evenement"], lieu: v["lieu"] } as Row,
+    };
+  }
+
   const { data } = await supabase
     .from("tickets_evenements")
     .select("*")
