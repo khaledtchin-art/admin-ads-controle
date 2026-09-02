@@ -10,6 +10,7 @@ export type ScanResult = {
   raw: string;
   title: string;
   message: string;
+  photoUrl?: string | undefined;
   profile?: Row | undefined;
   ticket?: Row | undefined;
   evenement?: Row | undefined;
@@ -78,8 +79,51 @@ async function logScan(input: {
 
 /* --------------------------------- Ticket -------------------------------- */
 
+/**
+ * Appelle une fonction SQL de la base ADS. Renvoie `null` si la fonction est
+ * absente ou en erreur (on retombe alors sur la lecture directe des tables).
+ */
+async function rpc(name: string, args: Record<string, unknown>): Promise<Row | null> {
+  try {
+    const { data, error } = await supabase.rpc(name, args);
+    if (error || data == null) return null;
+    const row = Array.isArray(data) ? (data[0] as Row | undefined) : (data as Row);
+    return row ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function scanTicket(raw: string, adminId: string | undefined): Promise<ScanResult> {
   const token = extractToken(raw);
+
+  // 1) Fonction dédiée côté ADS
+  const v = await rpc("verifier_qr_ticket", { qr_code: token });
+  if (v) {
+    const statut = String(v["statut"] ?? v["statut_ticket"] ?? "").toLowerCase();
+    const outcome: ScanOutcome = statut === "utilise" ? "deja_utilise" : statut === "valide" || statut === "" ? "valide" : "invalide";
+    const dateScan = v["date_scan"] ? new Date(String(v["date_scan"])).toLocaleString("fr-FR") : "—";
+    await logScan({ kind: "ticket", outcome, raw, adminId, userId: v["user_id"] });
+    return {
+      kind: "ticket",
+      outcome,
+      raw,
+      title:
+        outcome === "valide" ? "Ticket valide" : outcome === "deja_utilise" ? `DÉJÀ UTILISÉ le ${dateScan}` : `Ticket ${statut || "invalide"}`,
+      message: outcome === "valide" ? "Contrôle de l'entrée autorisé." : "Entrée refusée.",
+      photoUrl: (v["photo_url"] ?? v["photo"] ?? undefined) as string | undefined,
+      ticket: { ...v, id: v["ticket_id"] ?? v["id"], qr_code_unique: token },
+      profile: {
+        id: v["user_id"],
+        nom: v["nom"] ?? v["nom_membre"],
+        numero_membre: v["numero_membre"],
+        niveau: v["niveau"],
+        statut: v["statut_compte"],
+      } as Row,
+      evenement: { titre: v["titre_evenement"] ?? v["evenement"], lieu: v["lieu"] } as Row,
+    };
+  }
+
   const { data } = await supabase
     .from("tickets_evenements")
     .select("*")
@@ -137,13 +181,25 @@ export async function scanTicket(raw: string, adminId: string | undefined): Prom
   };
 }
 
-export async function validerEntree(ticketId: string, adminId: string | undefined) {
+/** Valide l'entrée via la fonction ADS, avec repli sur une mise à jour directe. */
+export async function validerEntree(ticketId: string, adminId: string | undefined, qrCode?: string) {
+  if (qrCode) {
+    const res = await rpc("valider_ticket_scan", { qr_code: qrCode, admin_id: adminId ?? null });
+    if (res) {
+      const ok = res["success"] !== false;
+      const message = String(res["message"] ?? (ok ? "Entrée validée." : "Validation refusée."));
+      if (!ok) throw new Error(message);
+      await logJournal({ userId: adminId, action: "ticket_valide", description: qrCode }).catch(() => undefined);
+      return message;
+    }
+  }
   const { error } = await supabase
     .from("tickets_evenements")
     .update({ statut: "utilise", date_scan: new Date().toISOString(), scanne_par: adminId ?? null })
     .eq("id", ticketId);
   if (error) throw error;
   await logJournal({ userId: adminId, action: "ticket_valide", description: ticketId }).catch(() => undefined);
+  return "Entrée validée.";
 }
 
 /* ---------------------------------- Reçu --------------------------------- */
@@ -189,6 +245,23 @@ export async function scanRecu(raw: string, adminId: string | undefined): Promis
 
 export async function scanProfil(raw: string, adminId: string | undefined): Promise<ScanResult> {
   const token = extractToken(raw);
+
+  const v = await rpc("verifier_qr_membre", { qr_code: token });
+  if (v) {
+    const statut = String(v["statut"] ?? "actif").toLowerCase();
+    const outcome: ScanOutcome = statut === "actif" || statut === "" ? "valide" : "invalide";
+    await logScan({ kind: "profil", outcome, raw, adminId, userId: v["user_id"] ?? v["id"] });
+    return {
+      kind: "profil",
+      outcome,
+      raw,
+      title: outcome === "valide" ? "Membre vérifié ✅" : `Compte ${statut}`,
+      message: outcome === "valide" ? "Identité confirmée sur la base ADS." : "Ce compte n'est pas actif.",
+      photoUrl: (v["photo_url"] ?? v["photo"] ?? undefined) as string | undefined,
+      profile: v,
+    };
+  }
+
   let profile = UUID.test(token) ? await fetchProfile(token) : undefined;
   if (!profile) {
     const { data } = await supabase

@@ -16,9 +16,12 @@ import {
   UsersPanel,
 } from "./AdsPanels";
 import { money, useAdsTable } from "@/lib/ads-queries";
+import { AlertsBell } from "./AlertsBell";
+import { useAdsAlerts } from "@/lib/ads-alerts";
 
 export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () => void }) {
   const adminId = user.id;
+  const { alerts, unread, markAllRead, clear } = useAdsAlerts();
   const profiles = useAdsTable("profiles", 1000);
   const transactions = useAdsTable("transactions", 1000);
   const retraits = useAdsTable("retraits", 1000);
@@ -58,9 +61,12 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={onSignOut}>
-            <LogOut className="mr-2 size-4" /> Déconnexion
-          </Button>
+          <div className="flex items-center gap-2">
+            <AlertsBell alerts={alerts} unread={unread} onOpen={markAllRead} onClear={clear} />
+            <Button variant="outline" size="sm" onClick={onSignOut}>
+              <LogOut className="mr-2 size-4" /> Déconnexion
+            </Button>
+          </div>
         </div>
       </header>
 

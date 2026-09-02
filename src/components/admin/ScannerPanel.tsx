@@ -56,10 +56,11 @@ export function ScannerPanel({ adminId }: { adminId: string | undefined }) {
 
   async function valider() {
     const id = result?.ticket?.["id"];
-    if (!id) return;
+    const qr = result?.ticket?.["qr_code_unique"];
+    if (!id && !qr) return;
     try {
-      await validerEntree(String(id), adminId);
-      toast.success("Entrée validée.");
+      const msg = await validerEntree(String(id ?? ""), adminId, qr ? String(qr) : undefined);
+      toast.success(msg);
       setResult({ ...result!, outcome: "deja_utilise", title: "Entrée validée", message: "Ticket marqué comme utilisé." });
       void tickets.refetch();
     } catch (e) {
@@ -134,6 +135,31 @@ export function ScannerPanel({ adminId }: { adminId: string | undefined }) {
               <h3 className="text-lg font-semibold">{result.title}</h3>
             </div>
             <p className="mt-1 text-sm opacity-90">{result.message}</p>
+
+            {(result.photoUrl || result.profile) && (
+              <div className="mt-3 flex items-center gap-3">
+                {result.photoUrl ? (
+                  <img
+                    src={result.photoUrl}
+                    alt={`Photo de ${String(result.profile?.["nom"] ?? "membre")}`}
+                    className="size-16 rounded-full border border-border object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="flex size-16 items-center justify-center rounded-full border border-border bg-muted text-lg font-semibold text-muted-foreground">
+                    {String(result.profile?.["nom"] ?? "?").slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <p className="font-semibold text-foreground">{String(result.profile?.["nom"] ?? "—")}</p>
+                  {result.kind === "profil" && result.outcome === "valide" && (
+                    <Badge variant="outline" className="border-success/40 bg-success/10 text-success">
+                      Membre vérifié ✅
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 grid gap-2 text-sm text-foreground sm:grid-cols-2">
               {result.profile && (
