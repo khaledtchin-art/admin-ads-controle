@@ -19,7 +19,7 @@ export type CreatePayoutInput = {
   retrait_id: string;
 };
 
-async function invoke<T>(name: string, body: unknown): Promise<T> {
+async function invoke<T>(name: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(name, { body });
   if (error) throw new Error(error.message);
   if (data && typeof data === "object" && "error" in (data as Record<string, unknown>)) {
