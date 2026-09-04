@@ -42,17 +42,42 @@ function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null);
   const [ready, setReady] = useState(false);
+  const [recovery, setRecovery] = useState(false);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    const isRecovery = hash.includes("type=recovery");
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setRecovery(true);
+        return;
+      }
       setSession(s);
       setIsSuperAdmin(null);
     });
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+      // La détection via hash prend en charge les retours d'email
+      // avant que l'événement PASSWORD_RECOVERY ne soit émis.
+      if (isRecovery && data.session) {
+        setRecovery(true);
+      } else {
+        setSession(data.session);
+      }
       setReady(true);
     });
     return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const exitRecovery = useCallback(async () => {
+    // Nettoie le hash puis ramène à l'écran de connexion.
+    if (typeof window !== "undefined" && window.history) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    await supabase.auth.signOut();
+    setRecovery(false);
+    setSession(null);
+    setReady(true);
+    toast.success("Mot de passe mis à jour. Connecte-toi avec ton nouveau mot de passe.");
   }, []);
 
   const userId = session?.user?.id;
