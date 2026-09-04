@@ -112,6 +112,7 @@ function AdminPage() {
     return Boolean(data.user?.email_confirmed_at);
   }, []);
 
+  if (recovery) return <AdminResetPassword onDone={exitRecovery} />;
   if (!ready) return <FullScreenLoader />;
   if (!session?.user) return <AdminLogin />;
   if (!session.user.email_confirmed_at)
