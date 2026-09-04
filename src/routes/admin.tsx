@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/ads/client";
 import { AdminLogin } from "@/components/admin/AdminLogin";
+import { AdminResetPassword } from "@/components/admin/AdminResetPassword";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { Loader2, MailCheck, Loader as LoaderIcon } from "lucide-react";
