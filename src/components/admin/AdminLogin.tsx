@@ -17,6 +17,9 @@ export function AdminLogin() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const captchaRef = useRef<HCaptcha | null>(null);
 
+  const [mode, setMode] = useState<"login" | "forgot">("login");
+  const [resetSent, setResetSent] = useState(false);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (HCAPTCHA_SITE_KEY && !captchaToken) {
@@ -53,6 +56,27 @@ export function AdminLogin() {
       }
     }
     setLoading(false);
+  }
+
+  async function onResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: `${window.location.origin}/admin`,
+    });
+    setLoading(false);
+    if (error) {
+      // Ne révèle jamais si le compte existe ou non : message générique.
+      const msg = error.message.toLowerCase();
+      if (msg.includes("rate") || msg.includes("too many") || msg.includes("security")) {
+        setError("Trop de demandes. Patiente une minute avant de réessayer.");
+      } else {
+        setError("Une erreur est survenue. Réessaie dans un instant.");
+      }
+      return;
+    }
+    setResetSent(true);
   }
 
   return (
