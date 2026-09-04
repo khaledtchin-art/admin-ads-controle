@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/ads/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Loader2, ArrowLeft, MailCheck } from "lucide-react";
 
 const HCAPTCHA_SITE_KEY =
   (import.meta.env["VITE_ADS_HCAPTCHA_SITE_KEY"] as string | undefined)?.trim() || "";
