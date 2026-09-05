@@ -4,9 +4,13 @@ import { ShieldAlert } from "lucide-react";
 export function AccessDenied({
   email,
   onSignOut,
+  reason = "role",
+  role,
 }: {
   email?: string | undefined;
   onSignOut: () => void;
+  reason?: "role" | "missing" | "error";
+  role?: string | undefined;
 }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
