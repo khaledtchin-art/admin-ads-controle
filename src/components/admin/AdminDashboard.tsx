@@ -35,6 +35,11 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
         const s = String(r["statut"] ?? "").toLowerCase();
         return s === "" || s.startsWith("en_") || s.startsWith("attente") || s === "pending";
       }).length;
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const today = (transactions.data ?? []).filter(
+      (r) => new Date(String(r["created_at"] ?? 0)).getTime() >= startOfDay.getTime(),
+    );
     return {
       users: profiles.data?.length ?? 0,
       volume: sum(transactions.data, "montant"),
@@ -42,6 +47,8 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
       soldes: sum(profiles.data, "solde"),
       validationsEnAttente: pending(validations.data),
       retraitsEnAttente: pending(retraits.data),
+      revenusJour: sum(today, "montant"),
+      txJour: today.length,
     };
   }, [profiles.data, transactions.data, retraits.data, validations.data]);
 
