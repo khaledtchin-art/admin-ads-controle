@@ -9,19 +9,34 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Check, Eye, Loader2, RefreshCw, X } from "lucide-react";
+import { Check, Eye, Loader2, MessageCircle, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import { money, shortDate, shortId, useAdsTable, useAdsUpdate, type Row } from "@/lib/ads-queries";
 import { ValidationDetailDialog } from "./ValidationDetailDialog";
 
 const FILTERS = ["tous", "en_attente", "valide", "rejete"] as const;
 
+/** Numéro WhatsApp : chiffres seuls, indicatif Niger (227) ajouté pour un numéro local. */
+export function waLink(phone: unknown): string | null {
+  const digits = String(phone ?? "").replace(/\D/g, "");
+  if (digits.length < 8) return null;
+  const full = digits.length === 8 ? `227${digits}` : digits;
+  return `https://wa.me/${full}`;
+}
+
 /** Vérification des comptes ADS — table `account_validations` (statut + horodatage). */
 export function ValidationsPanel({ adminId }: { adminId: string | undefined }) {
   const q = useAdsTable("account_validations", 300);
+  const profilesQ = useAdsTable("profiles", 1000);
   const update = useAdsUpdate(adminId);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("tous");
   const [detail, setDetail] = useState<Row | null>(null);
+
+  const profiles = useMemo(() => {
+    const m = new Map<string, Row>();
+    for (const p of (profilesQ.data ?? []) as Row[]) m.set(String(p["id"]), p);
+    return m;
+  }, [profilesQ.data]);
 
   const rows = (q.data ?? []) as Row[];
   const shown = useMemo(
