@@ -31,16 +31,24 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
+type AdminCheck = { ok: boolean; reason: "role" | "missing" | "error"; role?: string };
+
 /** Vérifie le rôle admin dans la table `profiles` de la base ADS. */
-async function fetchSuperAdmin(userId: string): Promise<boolean> {
-  const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
-  const role = String((data as { role?: unknown } | null)?.role ?? "").toLowerCase();
-  return role === "super_admin" || role === "admin";
+async function fetchSuperAdmin(userId: string): Promise<AdminCheck> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) return { ok: false, reason: "error" };
+  if (!data) return { ok: false, reason: "missing" };
+  const role = String((data as { role?: unknown }).role ?? "").toLowerCase();
+  return { ok: role === "super_admin" || role === "admin", reason: "role", role };
 }
 
 function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
-  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState<AdminCheck | null>(null);
   const [ready, setReady] = useState(false);
   const [recovery, setRecovery] = useState(false);
 
@@ -89,8 +97,10 @@ function AdminPage() {
       return;
     }
     void (async () => {
-      const ok = await fetchSuperAdmin(userId).catch(() => false);
-      if (!cancelled) setIsSuperAdmin(ok);
+      const check = await fetchSuperAdmin(userId).catch(
+        (): AdminCheck => ({ ok: false, reason: "error" }),
+      );
+      if (!cancelled) setIsSuperAdmin(check);
     })();
     return () => {
       cancelled = true;
@@ -124,8 +134,15 @@ function AdminPage() {
       />
     );
   if (isSuperAdmin === null) return <FullScreenLoader />;
-  if (!isSuperAdmin)
-    return <AccessDenied email={session.user.email ?? undefined} onSignOut={signOut} />;
+  if (!isSuperAdmin.ok)
+    return (
+      <AccessDenied
+        email={session.user.email ?? undefined}
+        onSignOut={signOut}
+        reason={isSuperAdmin.reason}
+        role={isSuperAdmin.role}
+      />
+    );
 
   return <AdminDashboard user={session.user} onSignOut={signOut} />;
 }

@@ -35,6 +35,11 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
         const s = String(r["statut"] ?? "").toLowerCase();
         return s === "" || s.startsWith("en_") || s.startsWith("attente") || s === "pending";
       }).length;
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const today = (transactions.data ?? []).filter(
+      (r) => new Date(String(r["created_at"] ?? 0)).getTime() >= startOfDay.getTime(),
+    );
     return {
       users: profiles.data?.length ?? 0,
       volume: sum(transactions.data, "montant"),
@@ -42,6 +47,8 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
       soldes: sum(profiles.data, "solde"),
       validationsEnAttente: pending(validations.data),
       retraitsEnAttente: pending(retraits.data),
+      revenusJour: sum(today, "montant"),
+      txJour: today.length,
     };
   }, [profiles.data, transactions.data, retraits.data, validations.data]);
 
@@ -71,6 +78,24 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
       </header>
 
       <main className="mx-auto max-w-7xl space-y-4 px-4 py-6">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Stat
+            label="Inscriptions en attente"
+            value={String(stats.validationsEnAttente)}
+            hint="Table account_validations"
+          />
+          <Stat
+            label="Retraits en attente"
+            value={String(stats.retraitsEnAttente)}
+            hint="Table retraits"
+          />
+          <Stat
+            label="Revenus du jour"
+            value={money(stats.revenusJour)}
+            hint={`${stats.txJour} transaction(s) aujourd'hui`}
+          />
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <Stat label="Utilisateurs" value={String(stats.users)} />
           <Stat label="Volume transactions" value={money(stats.volume)} />
