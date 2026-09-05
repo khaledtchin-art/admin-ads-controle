@@ -78,6 +78,24 @@ export function AdminDashboard({ user, onSignOut }: { user: User; onSignOut: () 
       </header>
 
       <main className="mx-auto max-w-7xl space-y-4 px-4 py-6">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Stat
+            label="Inscriptions en attente"
+            value={String(stats.validationsEnAttente)}
+            hint="Table account_validations"
+          />
+          <Stat
+            label="Retraits en attente"
+            value={String(stats.retraitsEnAttente)}
+            hint="Table retraits"
+          />
+          <Stat
+            label="Revenus du jour"
+            value={money(stats.revenusJour)}
+            hint={`${stats.txJour} transaction(s) aujourd'hui`}
+          />
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <Stat label="Utilisateurs" value={String(stats.users)} />
           <Stat label="Volume transactions" value={money(stats.volume)} />
