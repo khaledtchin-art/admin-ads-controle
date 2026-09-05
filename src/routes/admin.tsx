@@ -97,8 +97,10 @@ function AdminPage() {
       return;
     }
     void (async () => {
-      const ok = await fetchSuperAdmin(userId).catch(() => false);
-      if (!cancelled) setIsSuperAdmin(ok);
+      const check = await fetchSuperAdmin(userId).catch(
+        (): AdminCheck => ({ ok: false, reason: "error" }),
+      );
+      if (!cancelled) setIsSuperAdmin(check);
     })();
     return () => {
       cancelled = true;
