@@ -134,8 +134,15 @@ function AdminPage() {
       />
     );
   if (isSuperAdmin === null) return <FullScreenLoader />;
-  if (!isSuperAdmin)
-    return <AccessDenied email={session.user.email ?? undefined} onSignOut={signOut} />;
+  if (!isSuperAdmin.ok)
+    return (
+      <AccessDenied
+        email={session.user.email ?? undefined}
+        onSignOut={signOut}
+        reason={isSuperAdmin.reason}
+        role={isSuperAdmin.role}
+      />
+    );
 
   return <AdminDashboard user={session.user} onSignOut={signOut} />;
 }
