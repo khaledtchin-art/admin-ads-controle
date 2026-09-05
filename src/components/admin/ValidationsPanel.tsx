@@ -112,55 +112,80 @@ export function ValidationsPanel({ adminId }: { adminId: string | undefined }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Utilisateur</TableHead>
+              <TableHead>Membre</TableHead>
+              <TableHead>Téléphone</TableHead>
               <TableHead>Montant</TableHead>
+              <TableHead>Référence</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Demandé le</TableHead>
-              <TableHead>Dernière mise à jour</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {shown.length ? (
-              shown.map((r) => (
-                <TableRow key={String(r["id"])}>
-                  <TableCell className="font-mono text-xs">{shortId(r["user_id"])}</TableCell>
-                  <TableCell>{money(r["montant"])}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={r["statut"]} />
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-xs">
-                    {shortDate(r["created_at"])}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                    {shortDate(r["updated_at"])}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => setDetail(r)}>
-                        <Eye className="mr-1 size-3.5" /> Détails
-                      </Button>
-                      <Button
-                        size="sm"
-                        disabled={update.isPending}
-                        onClick={() => setStatut(r, "valide")}
-                      >
-                        <Check className="mr-1 size-3.5" /> Valider
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={update.isPending}
-                        onClick={() => setStatut(r, "rejete")}
-                      >
-                        <X className="mr-1 size-3.5" /> Rejeter
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+              shown.map((r) => {
+                const p = profiles.get(String(r["user_id"]));
+                const phone = p?.["phone"];
+                const wa = waLink(phone);
+                return (
+                  <TableRow key={String(r["id"])}>
+                    <TableCell>
+                      <div className="font-medium">
+                        {String(p?.["nom"] ?? p?.["full_name"] ?? "Membre inconnu")}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {String(p?.["email"] ?? shortId(r["user_id"]))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-xs">
+                      {phone ? String(phone) : "—"}
+                    </TableCell>
+                    <TableCell>{money(r["montant"])}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {String(r["reference_paiement"] ?? "—")}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={r["statut"]} />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-xs">
+                      {shortDate(r["created_at"])}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={!wa}
+                          title={wa ? "Contacter sur WhatsApp" : "Aucun numéro enregistré"}
+                          onClick={() => wa && window.open(wa, "_blank", "noopener")}
+                        >
+                          <MessageCircle className="mr-1 size-3.5" /> WhatsApp
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setDetail(r)}>
+                          <Eye className="mr-1 size-3.5" /> Détails
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={update.isPending}
+                          onClick={() => setStatut(r, "valide")}
+                        >
+                          <Check className="mr-1 size-3.5" /> Approuver
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={update.isPending}
+                          onClick={() => setStatut(r, "rejete")}
+                        >
+                          <X className="mr-1 size-3.5" /> Rejeter
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             ) : (
-              <Empty cols={6} />
+              <Empty cols={7} />
             )}
           </TableBody>
         </Table>
